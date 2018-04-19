@@ -1,0 +1,6 @@
+DE
+pies:der Hund
+kot:die Katze
+pi³ka:der Ball
+stó³:der Tisch
+jutro:das Morgen

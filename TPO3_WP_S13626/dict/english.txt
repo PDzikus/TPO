@@ -1,0 +1,6 @@
+EN
+kot:cat
+pies:dog
+stół:table
+piłka:ball
+jutro:tomorrow
