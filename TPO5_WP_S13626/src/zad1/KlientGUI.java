@@ -83,15 +83,14 @@ public class KlientGUI extends JFrame {
 		position.gridy = 4;
 		add(Box.createRigidArea(new Dimension(10,5)), position);	
 
-		JButton subscribeTopicButton = new JButton("Zapisz >>");
+		subscribeTopicButton = new JButton("Zapisz >>");
 		position = new GridBagConstraints();
 		position.gridx = 2;
 		position.gridy = 4;
 		position.anchor = GridBagConstraints.CENTER;
 		add(subscribeTopicButton, position);
 
-		JButton unsubTopicButton = new JButton("<< Usuń");
-
+		unsubTopicButton = new JButton("<< Usuń");
 		position = new GridBagConstraints();
 		position.gridx = 2;
 		position.gridy = 5;
@@ -132,13 +131,13 @@ public class KlientGUI extends JFrame {
 		position.gridy = 9;
 		add(Box.createRigidArea(new Dimension(10,30)), position);	
 
-		JButton closeClientButton = new JButton("Zamknij połączenie");
-		position = new GridBagConstraints();
-		position.gridx = 4;
-		position.gridy = 10;
-		position.gridwidth = 1;
-		position.anchor = GridBagConstraints.EAST;
-		add(closeClientButton, position);	
+//		closeClientButton = new JButton("Zamknij połączenie");
+//		position = new GridBagConstraints();
+//		position.gridx = 4;
+//		position.gridy = 10;
+//		position.gridwidth = 1;
+//		position.anchor = GridBagConstraints.EAST;
+//		add(closeClientButton, position);	
 	}
 	
 	public void displayMessage(String topic, String message) {
@@ -165,11 +164,11 @@ public class KlientGUI extends JFrame {
 	}
 	
 	public List<String> getSelectedAvailableTopics () {
-		return subscribedTopicList.getSelectedValuesList();
+		return availableTopicList.getSelectedValuesList();
 	}
 	
 	public List<String> getSelectedSubscribedTopics() {
-		return availableTopicList.getSelectedValuesList();
+		return subscribedTopicList.getSelectedValuesList();
 	}
 	
 	public void start() {

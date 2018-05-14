@@ -13,20 +13,20 @@ import java.time.LocalTime;
 public class Serwer {
 	private ServerSocketChannel serverSocket = null;
 	private Selector selector = null;
-	private ByteBuffer buffer = null;
 	private HashMap<String, ArrayList<Integer>> subscriptions = new HashMap<String, ArrayList<Integer>>();
 	private HashMap<Integer, SocketChannel> clients = new HashMap<Integer, SocketChannel>();
 	private Set<String> topics = new HashSet<String>();
 	boolean serverIsRunning = true;
+	private int clientCounter;
 	
 	private Serwer (String host, int port) {
+		clientCounter = 0;
 		try {
 			serverSocket = ServerSocketChannel.open();
 			serverSocket.configureBlocking(false);
 			serverSocket.socket().bind(new InetSocketAddress(host, port));
 			selector = Selector.open();
 			serverSocket.register(selector,SelectionKey.OP_ACCEPT);
-			buffer = ByteBuffer.allocate(1024);	
 		} catch(Exception exc) {
 			exc.printStackTrace();
 			System.exit(1);
@@ -95,10 +95,8 @@ public class Serwer {
 					writeMessage(client, "NOPE");
 			}
 			else if (command[0].equals("DELETE_TOPIC")) {
-				if (removeTopic(command[1])) 
-					writeMessage(client, "OK");
-				else
-					writeMessage(client, "NOPE");
+				writeMessage(client, "OK");
+				removeTopic(command[1]);
 			}
 			else if (command[0].equals("SEND_MESSAGE")) {
 				if (topics.contains(command[1])) {
@@ -108,8 +106,10 @@ public class Serwer {
 					writeMessage(client, "TOPIC_GONE");
 			}
 			else if (command[0].equals("REGISTER")) {
-				addClient(Integer.parseInt(command[1]), client);
-				writeMessage(client, "OK");
+				clientCounter++;
+				addClient(clientCounter, client);
+				writeMessage(client, Integer.toString(clientCounter));
+				
 			}
 			else if (command[0].equals("SUBSCRIBE")) {
 				if (subscribe(Integer.parseInt(command[1]), command[2]))
@@ -137,6 +137,7 @@ public class Serwer {
 	
 	private String readMessage(SocketChannel remote) {
 		if (!remote.isOpen()) return "";
+		ByteBuffer buffer = ByteBuffer.allocate(1024);
 		StringBuffer reqString = new StringBuffer();
 		reqString.setLength(0);
 		buffer.clear();
@@ -173,10 +174,10 @@ public class Serwer {
 			StringBuffer messageBuffer = new StringBuffer();
 			messageBuffer.append(message);
 			messageBuffer.append("\r\n");
-			ByteBuffer buf = charset.encode(CharBuffer.wrap(messageBuffer));
+			ByteBuffer buffer = charset.encode(CharBuffer.wrap(messageBuffer));
 			remote.setOption(StandardSocketOptions.TCP_NODELAY, false );
-			while (buf.hasRemaining())
-				remote.write(buf);
+			while (buffer.hasRemaining())
+				remote.write(buffer);
 			log("Wysłałem wiadomość: " + message);
 		} catch (IOException ex) {
 			log("Problem z połączeniem na podany kanał");

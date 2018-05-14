@@ -1,6 +1,5 @@
 package zad1;
 
-import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.util.*;
@@ -12,10 +11,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-
 import javax.swing.*;
-import javax.swing.text.DefaultCaret;
 
 
 public class Klient extends JFrame{
@@ -57,30 +53,7 @@ public class Klient extends JFrame{
         }
 	}
 	
-	private void prepareGUI() {
-		gui.unsubTopicButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				unsubscribeTopic();
-			}
-		});	
-		gui.subscribeTopicButton.addActionListener(new ActionListener() {
-			public void actionPerformed (ActionEvent e) {
-				subscribeTopic();
-			}
-		});
-		gui.closeClientButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent event) {
-				//shutdownClient();
-			}
-		});
-		javax.swing.SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-               	gui.start();
-            }
-        });
-	}
-	
-	public void start() {
+	public void listen() {
 		while(clientIsRunning) {
 			try {
 				int readyCount = selector.select();
@@ -95,20 +68,20 @@ public class Klient extends JFrame{
 
 					if (key.isReadable()) {
 						log("rozpoczynam odczyt z gniazda");
-						serviceRequest(); 
+						serviceRequest(messagesChannel); 
+
 					}
 				}
 			} catch(Exception exc) {
 				log("straciłem połączenie z serwerem");
 				clientIsRunning = false;
-				gui.displayMessage("informacja od serwera", "Straciłem połączenie z serwerem");
+				gui.displayMessage("informacja od klienta", "Straciłem połączenie z serwerem");
 			}
 		}
 		log("zamykam nasłuch");
 	}
 	
-	private void serviceRequest() {
-		SocketChannel channel = messagesChannel;
+	private void serviceRequest(SocketChannel channel) {
 		String request = readMessage(channel);
 		String[] command = request.split("::");
 		if (command[0].equals("TOPIC_MESSAGE")) {
@@ -146,10 +119,12 @@ public class Klient extends JFrame{
 						buffer.clear();
 					}
 				}
+			log("otrzymałem wiadomość: " + reqString.toString().trim());
 		} catch (Exception ex) {
-			log("problem przy próbie odczytu");
+			log("problem przy próbie odczytu - straciłem połączenie");
+			clientIsRunning = false;
+			gui.displayMessage("informacja od klienta", "Straciłem połączenie z serwerem");
 		}
-		log("otrzymałem wiadomość: " + reqString.toString().trim());
 		return reqString.toString().trim();
 	}
 	
@@ -164,8 +139,9 @@ public class Klient extends JFrame{
 				channel.write(buffer);
 			log("Wysłałem wiadomość: " + message);
 		} catch (IOException e) {
-			e.printStackTrace();
-			System.out.println(e);
+			log("problem z wysłaniem wiadomości - straciłem połączenie z serwerem");
+			clientIsRunning = false;
+			gui.displayMessage("informacja od klienta", "Straciłem połączenie z serwerem");
 		}
 	}
 	
@@ -181,9 +157,8 @@ public class Klient extends JFrame{
 		System.err.println("[" + time.toString() + "] Klient: "+ message);
 	}
 	
-	private void subscribeTopic() {
-		java.util.List<String> topics = gui.getSelectedAvailableTopics();
-		for (String topic : topics) {
+	public void subscribeTopic() {
+		for (String topic : gui.getSelectedAvailableTopics()) {
 			writeMessage("SUBSCRIBE::" + id + "::" + topic, requestsChannel);
 			String answer = readMessage(requestsChannel);
 			if(answer.equals("OK")) {
@@ -194,9 +169,8 @@ public class Klient extends JFrame{
 		updateTopicsDisplay();
 	}
 	
-	private void unsubscribeTopic() {
-		java.util.List<String> topics = gui.getSelectedSubscribedTopics();
-		for (String topic : topics) {
+	public void unsubscribeTopic() {
+		for (String topic : gui.getSelectedSubscribedTopics()) {
 			writeMessage("UNSUBSCRIBE::" + id + "::" + topic, requestsChannel);
 			String answer = readMessage(requestsChannel);
 			if(answer.equals("OK")) {
@@ -207,12 +181,42 @@ public class Klient extends JFrame{
 		updateTopicsDisplay();
 	}
 		
-	private void refreshTopics() {
+	public void refreshTopics() {
 		String[] topics = sendRequest("TOPICS").split("::");	
+		LinkedList<String> subscribed = new LinkedList<>();
+		LinkedList<String> available = new LinkedList<>();
 		for (String topic : topics) 
-			if (!subscribedTopics.contains(topics))
-				availableTopics.add(topic);
+			if (!subscribedTopics.contains(topic))
+				available.add(topic);
+			else
+				subscribed.add(topic);
+		subscribedTopics = subscribed;
+		availableTopics = available;
 		updateTopicsDisplay();
+	}
+	
+	private void prepareGUI() {
+		gui.unsubTopicButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				unsubscribeTopic();
+			}
+		});	
+		gui.subscribeTopicButton.addActionListener(new ActionListener() {
+			public void actionPerformed (ActionEvent e) {
+				subscribeTopic();
+			}
+		});
+//		gui.closeClientButton.addActionListener(new ActionListener() {
+//			public void actionPerformed(ActionEvent event) {
+//				//shutdownClient();
+//			}
+//		});
+		javax.swing.SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+               	gui.start();
+            }
+        });
+		refreshTopics();
 	}
 	
 	private void updateTopicsDisplay() {
@@ -225,7 +229,7 @@ public class Klient extends JFrame{
 		KlientGUI gui = new KlientGUI();
 		Klient klient = new Klient(addressIP, 9999, gui);
 		klient.prepareGUI();
-		klient.start();
+		klient.listen();
 	}
 
 
