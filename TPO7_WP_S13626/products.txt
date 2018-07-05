@@ -1,0 +1,4 @@
+Plecak::150::30
+Rower::1299::5
+Deskorolka::300::7
+Narty::999::10
